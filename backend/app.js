@@ -1,41 +1,33 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+const express = require('express');
+const path = require('path');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const mongoose = require('mongoose');
+const errorHandler = require('errorhandler');
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+mongoose.promise = global.Promise;
+const isProduction = process.env.NODE_ENV === 'production';
 
-var app = express();
+const app = express();
 
-// view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
-
-app.use(logger('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+app.use(cors());
+app.use(require('morgan')('dev'));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
+if (!isProduction) {
+  app.use(errorHandler());
+}
 
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  next(createError(404));
-});
+const mongoDbHost = 'mongodb://dima991911:192837465ds@ds161764.mlab.com:61764/online-shop';
 
-// error handler
-app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
+mongoose.connect(mongoDbHost,
+    {useNewUrlParser: true, useUnifiedTopology: true});
+const db = mongoose.connection;
+mongoose.set('debug', true);
+mongoose.set('useCreateIndex', true);
 
-  // render the error page
-  res.status(err.status || 500);
-  res.render('error');
-});
+app.use(require('./routes'));
 
-module.exports = app;
+app.listen(process.env.PORT || 8080, () => console.log(`Server running on 8080`));
